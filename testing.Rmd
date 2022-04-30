@@ -1,0 +1,571 @@
+---
+title: "Testing"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+
+library(tidyverse)
+
+library(readxl)
+
+
+
+
+
+```
+
+
+```{r}
+
+
+setwd("~/Projects/F1/Data")
+
+
+
+
+test_d1 = read_xlsx("test22d1.xlsx")
+
+
+test_d2 = read_xlsx("test22d2.xlsx")
+
+
+test_d3 = read_xlsx("test22d3.xlsx")
+
+````
+
+
+
+
+```{r}
+
+
+test_d12 = test_d1 %>% mutate(testd = "one")
+
+test_d22 = test_d2 %>% mutate(testd = "two")
+
+test_d32 = test_d3 %>% mutate(testd = "three")
+
+
+test_data = test_d12 %>% 
+                        bind_rows(test_d22) %>%
+                          bind_rows(test_d32)
+
+
+```
+
+
+
+```{r}
+
+
+
+prac_clean <- function(x) {
+  
+  
+  
+stint <- x %>% select(Driver, PitOutTime, LapStartDate)  %>%
+                        filter(!is.na(PitOutTime)) %>%
+                         group_by(Driver) %>%
+                            mutate(stin = 1:n()) %>%
+                              select(Driver, LapStartDate, stin)
+
+
+medl <-  x %>% mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                   group_by(Driver) %>%
+                                    summarise(med = median(lap3, na.rm = T)) %>%
+                                        select(Driver, med)
+
+
+  
+  
+turk_cleaned <-  x %>% left_join(stint, by = c("Driver", "LapStartDate")) %>%
+                          fill(stin) %>%
+                           mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                    left_join(medl, by = "Driver") %>%
+                                        mutate(delta = lap3/med-1) %>%
+                                            filter(delta < 0.02) %>%
+                                        group_by(Driver, stin) %>%
+                                            mutate(stintl = 1:n()) %>%
+                                            filter(delta < 0.02) %>%
+                                                  mutate(fueladj_lap = lap3 +(stintl * 0.06)) %>%
+                                                  mutate(lagl = lag(fueladj_lap)) %>%
+                                  mutate(lap4 = if_else(is.na(lagl), lap3, lagl)) %>%
+                                    mutate(delta2 = lap3 - lap4) %>%
+                                      mutate(lap5 = if_else(delta2 > 1, lagl, fueladj_lap))  %>%
+                                        select(DriverNumber, LapNumber, stin, Sector1Time, Sector2Time, Sector3Time, Compound, TyreLife, Team, Driver, stintl, lap5)
+
+
+return(turk_cleaned)
+
+  
+  
+}
+
+
+
+```
+
+
+
+```{r}
+
+
+test_d1_c <-  prac_clean(test_d1)
+
+
+
+
+
+
+
+
+```
+
+
+
+
+```{r}
+
+
+
+
+
+
+ggplot(test_d1, aes(x = Time, y = LapTime)) + geom_point()
+
+
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+
+nor <- test_d1 %>% mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                    filter(DriverNumber == 11)
+
+
+
+
+
+
+ggplot(nor, aes(x = Time, y = lap3)) + geom_point()
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+stint <- test_data %>% mutate(dri2 = if_else(DriverNumber == 23, "Alb", 
+                                           if_else(DriverNumber == 24, "ZOU", 
+                                                   if_else(DriverNumber == 51, "Fit", 
+                                                           if_else(DriverNumber == 1, "VER", 
+                                                              if_else(DriverNumber == 20, "MAG", Driver)))) %>%
+                    select(dri2, PitOutTime, LapStartDate)  %>%
+                        filter(!is.na(PitOutTime)) %>%
+                         group_by(dri2) %>%
+                            mutate(stin = 1:n()) %>%
+                              select(dri2, LapStartDate, stin)
+
+
+
+medl <-  test_d1 %>% mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                    mutate(dri2 = if_else(DriverNumber == 23, "Alb", 
+                                           if_else(DriverNumber == 24, "ZOU", 
+                                                   if_else(DriverNumber == 51, "Fit", Driver)))) %>%
+                                   group_by(dri2) %>%
+                                    summarise(med = median(lap3, na.rm = T)) %>%
+                                        select(dri2, med)
+
+
+  
+
+  
+test_cleaned <-  test_data %>% mutate(dri2 = if_else(DriverNumber == 23, "Alb", 
+                                           if_else(DriverNumber == 24, "ZOU", 
+                                                   if_else(DriverNumber == 51, "Fit", Driver)))) %>%
+                           left_join(stint, by = c("dri2", "LapStartDate")) %>%
+                          fill(stin) %>%
+                           mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                  ungroup() %>%
+                                  group_by(dri2) %>%
+                                    mutate(lls = lag(LS)) %>%
+                                    mutate(delta = LS-lls) %>%
+                                    left_join(medl, by = "dri2") %>%
+                                        mutate(delta2 = lap3/med-1) %>%
+                                          ungroup() %>%
+                                          group_by(dri2, stin) %>%
+                                            mutate(stintl = 1:n()) %>%
+                              
+                                            filter(delta2 < 0.02) %>%
+                                                  mutate(fueladj_lap = lap3 +(stintl * 0.06)) %>%
+                                                  mutate(lagl = lag(fueladj_lap)) %>%
+                                  mutate(lap4 = if_else(is.na(lagl), lap3, lagl)) %>%
+                                    mutate(delta2 = lap3 - lap4) %>%
+                                      mutate(lap5 = if_else(delta2 > 1, lagl, fueladj_lap))  %>%
+                     select(DriverNumber, LapNumber, stin, Sector1Time, Sector2Time, Sector3Time, Compound, TyreLife, Team, Driver, stintl, lap5, testd)
+
+
+
+```
+
+
+
+```{r}
+
+
+stint_leng <- test_data2 %>%
+                              group_by(dri2, Stint, ) %>%
+                                summarise(totl = n())
+
+colnames(stint_leng)[2] <- "stin"
+
+
+test_cleaned_mod <- test_cleaned   %>% mutate(team2 = if_else(dri2  == "RUS", "Mercedes", 
+                                                              if_else(dri2 == "Alb", "Williams", 
+                                                                      if_else(dri2 == "Fit", "Haas", 
+                                                                        if_else(dri2 == "ZOU", "Alfa Romeo", Team))))) %>%
+                                        left_join(stint_leng, by = c("dri2", "stin")) %>%
+                                          mutate(stint = as.factor(as.numeric(stin))) %>%
+                                          ungroup() %>%
+                                          select(dri2, stint, stintl, lap5) %>%
+                                             group_by( stint, dri2) %>%
+                                          #   summarise(n = n())
+                                             nest()
+                                      
+
+tyre_mod <- function(df) {
+  lm(lap5 ~ stintl, data = df)
+}
+
+
+
+
+
+test_cleaned_mod2 <-  test_cleaned_mod %>%
+                                mutate(mod =  map(data, tyre_mod)) %>%
+                                mutate(tid = map(mod, tidy)) %>%
+                                unnest(tid)
+
+#%>%
+  
+ 
+
+```
+
+
+
+```{r}
+
+
+
+
+colnames(stint_leng)[2] <- "stin"
+
+
+test_cleaned_alb <- test_cleaned   %>% left_join(stint_leng, by = c("dri2", "stin")) %>%
+                                          select(dri2, Team,stin, stintl, lap5, totl) %>%
+                                            filter(dri2 == "Alb") %>%
+                                              filter(stin == 20)
+
+
+test_mod = lm(lap5 ~ stintl, test_cleaned_alb)
+
+
+tidy(test_mod)
+
+ggplot(test_cleaned_alb, aes(x = stintl, y = lap5)) + geom_point()
+
+
+```
+
+
+
+```{r}
+
+df <- tibble(x = c(1, 1, 1, 2, 2, 3), y = 1:6, z = 6:1)
+# Note that we get one row of output for each unique combination of
+# non-nested variables
+df %>% nest(data = c(y, z))
+
+
+
+test_cleaned_mod
+
+
+
+```
+
+
+````{r}
+
+
+drive_nes = function(x){
+
+test_cleaned <- test_cleaned   %>% mutate(team2 = if_else(dri2  == "RUS", "Mercedes", 
+                                                              if_else(dri2 == "Alb", "Williams", 
+                                                                      if_else(dri2 == "Fit", "Haas", 
+                                                                        if_else(dri2 == "ZOU", "Alfa Romeo", Team))))) %>%
+                                        left_join(stint_leng, by = c("dri2", "stin")) %>%
+                                          mutate(stint = as.factor(as.numeric(stin))) %>%
+                                          ungroup() %>%
+                                          select(dri2, stint, stintl, lap5)  %>% 
+                                            filter(dri2 == c(x)) %>% 
+                                              group_by(dri2, stint) %>% 
+                                                      nest()
+                                                  
+
+}
+
+
+
+drivers = c("Alb", "NOR", "BOT", "GAS", "VET", "TSU", "PER", "VER", "HAM", "ZOU", "LAT", "RUS", "SAI", "LEC", "Fit", "MSC", "STR", "ALO", "OCO")
+
+
+
+
+run_nest = map_dfr(drivers, drive_nes)
+
+
+```
+
+
+
+
+```{r}
+
+
+
+sai = drive_nes("SAI")
+
+lec = drive_nes("LEC")
+
+
+alb = drive_nes("Alb")
+
+nor = drive_nes("NOR")
+
+bot = drive_nes("BOT")
+
+gas = drive_nes("gas")
+
+vet = drive_nes("VET")
+
+tsu = drive_nes("TSU")
+
+per = drive_nes("PER")
+
+ver = drive_nes("VER")
+
+
+ham = drive_nes("HAM")
+
+zou = drive_nes("ZOU")
+
+lat = drive_nes("LAT")
+
+rus = drive_nes("RUS")
+
+fit = drive_nes("Fit")
+
+msc = drive_nes("MSC")
+
+
+str = drive_nes("STR")
+
+alo = drive_nes("ALO")
+
+oco = drive_nes("OCO")
+
+mag = drive_nes("MAG")
+
+test = sai %>% bind_rows(lec) %>%
+                    bind_rows(alb) %>%
+                      bind_rows(nor) %>%
+                        bind_rows(bot) %>%
+                          bind_rows(gas) %>%
+                            bind_rows(vet) %>%
+                      bind_rows(tsu) %>%
+                        bind_rows(per) %>%
+                          bind_rows(ver) %>%
+                             bind_rows(ham) %>%
+                            bind_rows(zou) %>%
+                      bind_rows(lat) %>%
+                        bind_rows(rus) %>%
+                          bind_rows(fit) %>%
+                            bind_rows(msc) %>%
+                           bind_rows(str) %>%
+                          bind_rows(alo) %>%
+                            bind_rows(oco)
+
+
+```
+
+
+```{r}
+
+
+stint_leng <- test_d1 %>%  mutate(dri2 = if_else(DriverNumber == 23, "Alb", 
+                                           if_else(DriverNumber == 24, "ZOU", 
+                                                   if_else(DriverNumber == 51, "Fit", Driver)))) %>%
+                              group_by(dri2, testd, Stint) %>%
+                                summarise(totl = n())
+
+colnames(stint_leng)[2] <- "stint"
+
+stint_leng$stint <- as.factor(as.numeric(stint_leng$stint))
+
+
+test_cleaned_mod3 = test_cleaned_mod2 %>% select(dri2, stint, Team, term, estimate) %>%
+                                            left_join(stint_leng, by = c("dri2", "stint")) %>%
+                                            pivot_wider(names_from = term, values_from = estimate) %>%
+                                              filter(totl > 6) 
+                                                
+
+colnames(test_cleaned_mod3)[5] <- "base_lap"
+colnames(test_cleaned_mod3)[6] <- "deg"
+
+
+test_cleaned_mod3 <- test_cleaned_mod3 %>%
+                                  filter(deg > 0) %>%
+                                      filter(base_lap > 50) %>%
+                                          ungroup()
+
+
+cols = c("AlphaTauri" = "#08051a", "Alpine" = "#ff57cf", "Aston Martin" = "#58ff05", "Ferrari" = "#f20c00", "Mclaren" = "#ff8b1f", 
+     "Mercedes" = "#22d4a7", "Red Bull" = "#170030")
+
+ggplot(test_cleaned_mod3, aes(x = deg, y = base_lap, col = Team)) + geom_point()
+#+ facet_wrap(~Team)
+
+
+```
+
+
+
+
+```{r}
+
+
+
+
+tyre_mod <- function(df) {
+  lm(lap5 ~ stintl, data = df)
+}
+
+
+
+
+
+test_cleaned_mod2 <-  test %>%
+                                mutate(mod =  map(data, tyre_mod)) %>%
+                                mutate(tid = map(mod, tidy)) %>%
+                                unnest(tid)
+
+#%>%
+
+
+
+
+
+```
+
+
+
+
+```{r}
+
+
+
+
+
+stint_info = test_data2 %>%  left_join(stint, by = c("dri2", "LapStartDate")) %>%
+                          fill(stin) %>%
+                               left_join(stint_leng, by = c("dri2", "stin")) %>%
+                                  group_by(dri2, stin) %>%
+                                        slice_min(LapNumber) %>%
+                                          ungroup() %>%
+                                  select(dri2, stin, Compound, team2, testd.x, totl)
+ 
+
+colnames(stint_info)[2] <- "stint"
+
+stint_info$stint <- as.factor(as.numeric(stint_info$stint))
+
+
+test_cleaned_mod3 = test_cleaned_mod2 %>% select(dri2, stint, term, estimate) %>%
+                                            left_join(stint_info, by = c("dri2", "stint")) %>%
+                                            pivot_wider(names_from = term, values_from = estimate) %>%
+                                              filter(totl > 6) 
+                                                
+
+colnames(test_cleaned_mod3)[7] <- "base_lap"
+colnames(test_cleaned_mod3)[8] <- "deg"
+
+
+test_cleaned_mod3 <- test_cleaned_mod3 %>%
+                                  filter(deg > 0) %>%
+                                      filter(base_lap > 50) %>%
+                                          ungroup()
+
+
+cols = c("AlphaTauri" = "#08051a", "Alpine" = "#ff57cf", "Aston Martin" = "#58ff05", "Ferrari" = "#f20c00", "Mclaren" = "#ff8b1f", 
+     "Mercedes" = "#22d4a7", "Red Bull" = "#170030")
+
+ggplot(test_cleaned_mod3, aes(x = deg, y = base_lap, col = team2)) + geom_point() + facet_wrap(~Compound) 
+#+ facet_wrap(~Team)
+
+ggplot(test_cleaned_mod3, aes(x = deg, y = base_lap, col = team2)) + geom_point() + facet_wrap(~team2) 
+
+
+```
+
+
+```{r}
+
+test_cleaned_mod4 = test_cleaned_mod3 %>% filter(Compound %in% c("SOFT", "MEDIUM", "HARD"))
+
+
+ggplot(test_cleaned_mod4, aes(x = deg, y = base_lap, col = team2)) + geom_point(size = 2) +
+                                                                       # geom_smooth(method = "lm", se= F) +
+                                                                      facet_wrap(~Compound, scales= "free")
+
+
+
+
+
+
+```

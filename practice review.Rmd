@@ -1,0 +1,738 @@
+---
+title: "practice analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+
+
+library(tidyverse)
+
+library(readxl)
+
+
+
+
+
+```
+# functions 
+
+```{r}
+
+
+
+prac_clean <- function(x) {
+  
+  
+  
+stint <- x %>% select(Driver, PitOutTime, LapStartDate)  %>%
+                        filter(!is.na(PitOutTime)) %>%
+                         group_by(Driver) %>%
+                            mutate(stin = 1:n()) %>%
+                              select(Driver, LapStartDate, stin)
+
+
+medl <-  x %>% mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                   group_by(Driver) %>%
+                                    summarise(med = median(lap3, na.rm = T)) %>%
+                                        select(Driver, med)
+
+
+  
+  
+turk_cleaned <-  x %>% left_join(stint, by = c("Driver", "LapStartDate")) %>%
+                          fill(stin) %>%
+                           mutate(laptime2 = LapTime *24) %>%
+                                mutate(lap3 = laptime2*3600) %>%
+                                  mutate(LS = LapStartTime *24*60) %>%
+                                    left_join(medl, by = "Driver") %>%
+                                        mutate(delta = lap3/med-1) %>%
+                                            filter(delta < 0.02) %>%
+                                        group_by(Driver, stin) %>%
+                                            mutate(stintl = 1:n()) %>%
+                                            filter(delta < 0.02) %>%
+                                                  mutate(fueladj_lap = lap3 +(stintl * 0.06)) %>%
+                                                  mutate(lagl = lag(fueladj_lap)) %>%
+                                  mutate(lap4 = if_else(is.na(lagl), lap3, lagl)) %>%
+                                    mutate(delta2 = lap3 - lap4) %>%
+                                      mutate(lap5 = if_else(delta2 > 1, lagl, fueladj_lap))  %>%
+                                        select(DriverNumber, LapNumber, stin, Sector1Time, Sector2Time, Sector3Time, Compound, TyreLife, Team, Driver, stintl, lap5)
+
+
+return(turk_cleaned)
+
+  
+  
+}
+
+
+
+
+stintl = 1:50
+
+
+test_r = tibble(stintl) %>%
+                mutate(stintl2 = stintl^2)
+
+
+
+
+stint_func_m = function(y){
+  
+  
+rus_mod = med_mod %>% filter(Driver == y)
+
+
+rmod = lm(perdiff ~ stintl + stintl2, rus_mod)
+
+
+rusp = predict(rmod, test_r)
+
+
+
+comp = test_r %>% bind_cols(rusp) %>%
+                      mutate(dri = y) %>%
+                        mutate(tyre = "Medium")
+
+colnames(comp)[3] <- "pred"
+
+
+return(comp)
+  
+}
+  
+
+
+
+
+stint_func_h= function(y){
+  
+  
+rus_mod = hard_mod %>% filter(Driver == y)
+
+
+rmod = lm(perdiff ~ stintl + stintl2, rus_mod)
+
+
+rusp = predict(rmod, test_r)
+
+
+
+comp = test_r %>% bind_cols(rusp) %>%
+                      mutate(dri = y) %>%
+                        mutate(tyre = "Hard")
+
+
+colnames(comp)[3] <- "pred"
+
+
+return(comp)
+  
+}
+  
+
+
+stint_func_s = function(y){
+  
+  
+rus_mod = soft_mod %>% filter(Driver == y)
+
+
+rmod = lm(perdiff ~ stintl + stintl2, rus_mod)
+
+
+rusp = predict(rmod, test_r)
+
+
+
+comp = test_r %>% bind_cols(rusp) %>%
+                      mutate(dri = y) %>%
+                        mutate(tyre = "Soft")
+
+colnames(comp)[3] <- "pred"
+
+
+return(comp)
+  
+}
+
+
+
+
+
+
+```
+
+
+
+# data
+```{r}
+
+
+
+setwd("~/Projects/F1/Data/FP2/2022")
+
+
+fp2 = read_xlsx("gp1.xlsx")
+
+
+
+sa_22 <- prac_clean(fp2)
+
+
+rlap = 56
+
+
+```
+
+## summary 
+
+```{r}
+
+
+
+
+
+
+stint_len = sa_22 %>% group_by(Driver, stin) %>%
+                            summarise(n = n())
+
+
+
+sa_22_2 = sa_22 %>% left_join(stint_len, by = c("Driver", "stin")) %>%
+                                    filter(n > 4)
+
+
+
+ggplot(sa_22_2, aes(x = TyreLife, y = lap5, col = Compound)) + geom_point() + facet_wrap(~Compound) 
+
+
+
+
+
+
+
+
+
+
+
+````
+
+
+
+###Overall Pace
+
+```{r}
+
+
+
+
+
+min_lap = sa_22_2 %>% ungroup() %>%
+                              group_by(Driver, stin) %>%
+                                slice_min(lap5) %>%
+                                  select(Driver, stin, lap5)
+
+
+colnames(min_lap)[3]<- "min_lap"
+
+
+
+
+sa_22_3 = sa_22_2 %>% left_join(min_lap, by = c("Driver", "stin")) %>%
+                              mutate(delta = lap5 - min_lap) %>%
+                              filter(delta < 3) %>%
+                                  group_by(Driver, stin, Compound) %>%
+                                    summarise(totloss = sum(delta, na.rm = T ), n= n(), av_lap = mean(lap5, na.rm = T))  
+
+
+cols = c("PER" = "#1E5BC6", "VER" = "#1E5BC6", "HAM" = "#6CD3BF", "RUS" = "#6CD3BF", "SAI" = "#ED1C24", "LEC" = "#ED1C24", "NOR" = "#F58020", "RIC" = "#F58020", 
+         "ALO" = "#2293D1", "OCO" = "#2293D1", "GAS" = "#4E7C9B", "TSU" = "#4E7C9B", "STR" = "#2D826D", "HUL" = "#2D826D", "ALB" = "#37BEDD", "LAT" = "#37BEDD", 
+         "BOT" = "#B12039", "ZHO" = "#B12039", "MAG" = "#B6BABD", "MSC" = 	"#B6BABD")
+
+
+ggplot(sa_22_3, aes(x = Compound, y = av_lap, label = Driver, col = Driver)) + geom_text() +
+                                                                                            scale_colour_manual(values = cols) +
+                                                                         labs(x = "Tyre Compound", y = "Average Lap (s)", title = "FP2 Race Sim") +
+                                                                                  guides(colour = "none", size = guide_legend(title = "Laps")) + 
+                                                     theme(panel.background = element_rect(fill = "white"), panel.grid.major.y = element_line(colour = "grey"), panel.grid.major.x = element_blank())
+
+
+
+
+
+
+
+
+````
+
+
+
+
+### deg curve 
+
+
+
+```{r}
+
+
+
+
+sa_22_4 = sa_22_2 %>% left_join(min_lap, by = c("Driver", "stin")) %>%
+                              mutate(delta = lap5 - min_lap) %>%
+                                filter(delta < 5) %>%
+                                mutate(perdiff =  delta/min_lap)
+
+
+tot_loss = sa_22_4 %>% group_by(Driver, stin) %>%
+                          summarise(totpd = sum(delta))
+
+
+
+
+hard_mod = sa_22_4 %>% filter(Compound == "HARD") %>%
+                        mutate(stintl2 = stintl^2) 
+
+
+
+
+
+med_mod = sa_22_4 %>% filter(Compound == "MEDIUM") %>%
+                        mutate(stintl2 = stintl^2)
+
+
+
+soft_mod = sa_22_4 %>% filter(Compound == "SOFT") %>%
+                        mutate(stintl2 = stintl^2)
+
+
+soft_dri = soft_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+soft_list = list(soft_dri$Driver)
+
+soft_list2 = soft_list[[1]]
+
+med_dri = med_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+med_list = list(med_dri$Driver)
+
+med_list2 = med_list[[1]]
+
+
+har_dri = hard_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+har_list = list(har_dri$Driver)
+
+har_list2 = har_list[[1]]
+
+
+soft_stin = map_dfr(soft_list2, stint_func_s)
+
+med_stin = map_dfr(med_list2, stint_func_m)
+
+
+hard_stin = map_dfr(har_list2, stint_func_h)
+
+
+
+all_data = soft_stin %>%
+                    bind_rows(med_stin) %>%
+                    bind_rows(hard_stin)
+
+
+test = all_data  %>% group_by(dri, tyre) %>%
+                        summarise(totpred = sum(pred)) %>%
+                          mutate(val = if_else(totpred < 0 , 0, 1))
+
+all_data2 = all_data %>%
+                        left_join(test, by = c("dri", "tyre")) %>%
+                            filter(val == 1)
+
+
+all_data_mx = all_data2 %>% group_by(stintl, tyre) %>%
+                              slice_max(pred) %>%
+                                select(stintl, tyre, pred)
+
+
+colnames(all_data_mx)[3] = "Max"
+
+
+
+
+all_data_mn = all_data2 %>% group_by(stintl, tyre) %>%
+                                slice_min(pred) %>%
+                                select(stintl, tyre, pred)
+
+
+colnames(all_data_mn)[3] = "min"
+
+
+all_data_f = all_data_mx %>% left_join(all_data_mn, by = c("stintl", "tyre")) %>%
+                              mutate(delta = Max - min) %>%
+                                mutate(max = if_else(delta == 0, Max + 0.5, Max))
+
+
+
+
+cols1 <-  c("Hard" = "#6d009c", "Medium" = "#eb9b34", "Soft" = "#009e45")
+
+
+ggplot(all_data_f, aes(x = stintl, ymin = min, ymax = max, fill = tyre)) + 
+                                                        geom_ribbon(alpha = 0.7) + 
+                                                                     facet_wrap(~tyre) +
+                                                                        labs(x = "Stint Lap", y = "% Pace Loss", title = "Tyre Degredation Curves") +
+                                                                          guides(fill = guide_legend(title= "Tyre")) +
+                                                                            scale_fill_manual(values = cols1) +
+                                                   theme(panel.background = element_rect(fill = "#c9c9c9"), panel.grid.minor =  element_blank(), panel.grid.major = element_line(colour = "#9c9a9a"), plot.background = element_rect(fill = "#c9c9c9"), legend.background = element_rect(fill = "#c9c9c9"))
+ 
+
+
+
+
+
+```
+
+
+
+
+```{r}
+
+tyre = c("Soft", "Medium", "Hard")
+
+delta = c(0, 0.8, 1.6)
+
+
+tyre_offset = tibble(tyre, delta)
+
+
+tyre_deg = all_data2 %>%
+                      group_by(stintl, tyre) %>%
+                        slice_min(pred) %>%
+                          distinct(pred)
+
+recs = 1:rlap
+
+
+one_stop = function(x,y ){ 
+
+strats = tibble(recs) %>% 
+                mutate(stlap = 1) %>%
+               
+                mutate(newtl = 1:n()) %>%
+                select(recs,stlap, newtl) %>%
+                pivot_longer(2:3, names_to = "stage", values_to = "lap") %>%
+                  mutate(tyre = if_else(stage == "stlap", x, y)) %>%
+                   filter(recs != 1)
+                
+
+races = tibble(recs) %>%
+            mutate(laps = rlap) %>%
+              uncount(laps) %>%
+                group_by(recs) %>%
+                  mutate(lap = 1:n()) %>%
+                    left_join(strats, by = c("recs", "lap")) %>%
+                      fill(tyre, .direction = "down") %>%
+                          group_by(recs, tyre) %>%
+                          mutate(stintl = 1:n()) %>%
+                          left_join(tyre_deg, by = c("stintl", "tyre")) %>%
+                            mutate(base = 85) %>%
+                            left_join(tyre_offset, by = "tyre") %>%
+                              mutate(fuelcor = (lap-1)*0.06) %>%
+                              mutate(laptime = (base- fuelcor)/100 * (100 + pred)) %>%
+                                filter(recs != 1) %>%
+                                ungroup() %>%
+                                  group_by(recs) %>%
+                                    summarise(tottime = (sum(laptime)+ 25)/60)
+
+
+strats2 = strats %>% filter(lap != 1)
+
+
+
+races2 = races %>% left_join(strats2, by = "recs") %>%
+                      mutate(strategy = paste(x, lap, tyre, sep = "-")) %>%
+                        slice_min(tottime) %>%
+                        select(recs, tottime, strategy) %>%
+                        mutate(stops = 1)
+
+return(races2)
+
+}
+
+
+```
+
+
+```{r}
+
+
+
+ter <- 1:rlap # creaing the table with the laps 
+
+
+ter2 <- tibble(ter) #creating a dataframe
+
+
+
+two_stop = function(x,y,z){
+
+## creating all the pitstop lapoptions 
+
+ter3 <- ter2 %>% mutate(stp2 = rlap - ter) %>%
+                  mutate(stp3 = rlap - ter) %>%
+                    uncount(stp2) %>%
+                      mutate(rec = 1:n()) %>%
+                      group_by(ter) %>%
+                      mutate(n = 1:n()) %>%
+                      mutate(stop2 = ter + n) %>%
+                      ungroup() %>%
+                        filter(ter > 1 ) %>%
+                        mutate(strt = 1:n())  %>%
+                        select(strt, ter, stop2) 
+
+colnames(ter3)[2] <- "stop1"
+                                
+
+
+
+ter4 <- ter3 %>% pivot_longer(cols = 2:3, names_to = "stop", values_to = "lap") %>%
+                                      mutate(tyre = if_else(stop == "stop1", y, z))
+
+
+colnames(ter4)[1] <- "recs"
+
+             
+
+
+recs = 1:nrow(ter4)
+  
+
+
+  
+
+races = tibble(recs) %>%
+            mutate(laps = rlap) %>%
+              uncount(laps) %>%
+                group_by(recs) %>%
+                  mutate(lap = 1:n()) %>%
+                    left_join(ter4, by = c("recs", "lap")) %>%
+                      mutate(tyre = if_else(lap == 1, x, tyre)) %>%
+                         mutate(stopr = if_else(lap == 1, "start", stop)) %>%
+                          fill(stopr, .direction = "down") %>%
+                               fill(tyre, .direction = "down") %>%
+                          group_by(recs ,stopr, tyre) %>%
+                          mutate(stintl = 1:n()) %>%
+                          left_join(tyre_deg, by = c("stintl", "tyre")) %>%
+                            mutate(base = 85) %>%
+                            left_join(tyre_offset, by = "tyre") %>%
+                              mutate(fuelcor = (lap-1)*0.06) %>%
+                              mutate(laptime = (base- fuelcor)/100 * (100 + pred)) %>%
+                                filter(recs != 1) %>%
+                                ungroup() %>%
+                                  group_by(recs) %>%
+                                    summarise(tottime = (sum(laptime) + 25 *2)/60)
+
+
+ter5 = ter4 %>% filter(stop == "stop1") %>%
+                    select(recs, lap, tyre)
+
+colnames(ter5)[2] = "lap1"
+colnames(ter5)[3] = "tyre1"
+
+
+
+ter6 = ter4 %>% filter(stop == "stop2") %>%
+                    select(recs, lap, tyre)
+
+colnames(ter6)[2] = "lap2"
+colnames(ter6)[3] = "tyre2"
+
+ter7 = ter5 %>% left_join(ter6, by= "recs")
+
+
+
+races2 = races %>% left_join(ter7, by = "recs") %>%
+                      mutate(strategy = paste(x, lap1, tyre1, lap2, tyre2, sep = "-")) %>%
+                        slice_min(tottime) %>%
+                          select(recs, tottime, strategy) %>%
+                            mutate(stops = 2)
+return(races2)
+
+}
+
+
+
+strat_sum = one_stop("Soft", "Medium") %>%
+                          bind_rows(one_stop("Soft", "Hard")) %>%
+                              bind_rows(one_stop("Medium", "Hard")) %>%
+                         bind_rows(two_stop("Soft", "Soft", "Medium")) %>%
+                              bind_rows(two_stop("Soft", "Medium", "Medium")) %>%
+                                 bind_rows(two_stop("Soft", "Soft", "Hard")) %>%
+                                     bind_rows(two_stop("Soft", "Hard", "Hard")) %>%
+                                       bind_rows(two_stop("Soft", "Medium", "Hard")) %>%
+                                         bind_rows(two_stop("Medium", "Medium", "Hard")) %>%
+                                             bind_rows(two_stop("Medium", "Hard", "Hard")) 
+  
+  
+
+
+cols2 <-  c("2" = "#6d009c", "1" = "#eb9b34")
+  
+  
+
+ggplot(strat_sum, aes(x = reorder(strategy,tottime), y = tottime, col = as.factor(stops))) + geom_point(size = 4) +
+                                                                                    coord_flip() +
+                                                                                      scale_color_manual(values = cols2) +
+                                                                                        labs(y = "Race Time (min)", x = "Strategy", title = "Potential Strategies", 
+                                                                                   subtitle = "Strategy in the form of start tyre -stop lap- replacement tyre ect") +
+                                                                                          guides(col = guide_legend(title = "Total Stops")) + 
+                                                                                             theme(panel.background = element_rect(fill = "#c9c9c9"), panel.grid.minor =  element_blank(), panel.grid.major = element_line(colour = "#9c9a9a"), plot.background = element_rect(fill = "#c9c9c9"), legend.background = element_rect(fill = "#c9c9c9"))
+ 
+
+
+```
+
+
+
+
+```{r}
+
+
+ter3 <- ter2 %>% mutate(stp2 = rlap - ter) %>%
+                  mutate(stp3 = rlap - ter) %>%
+                    uncount(stp2) %>%
+                      mutate(rec = 1:n()) %>%
+                      group_by(ter) %>%
+                      mutate(n = 1:n()) %>%
+                      mutate(stop2 = ter + n) %>%
+                      ungroup() %>%
+                        filter(ter > 1 ) %>%
+                        mutate(strt = 1:n())  %>%
+                        select(strt, ter, stop2) 
+
+colnames(ter3)[2] <- "stop1"
+                                
+
+
+
+ter4 <- ter3 %>% pivot_longer(cols = 2:3, names_to = "stop", values_to = "lap") %>%
+                                      mutate(tyre = if_else(stop == "stop1", "Medium", "Medium"))
+
+
+colnames(ter4)[1] <- "recs"
+
+             
+
+
+recs = 1:nrow(ter4)
+  
+
+
+  
+
+races = tibble(recs) %>%
+            mutate(laps = rlap) %>%
+              uncount(laps) %>%
+                group_by(recs) %>%
+                  mutate(lap = 1:n()) %>%
+                    left_join(ter4, by = c("recs", "lap")) %>%
+                      mutate(tyre = if_else(lap == 1, "Soft", tyre)) %>%
+                         mutate(stopr = if_else(lap == 1, "start", stop)) %>%
+                          fill(stopr, .direction = "down") %>%
+                               fill(tyre, .direction = "down") %>%
+                          group_by(recs ,stopr, tyre) %>%
+                          mutate(stintl = 1:n()) %>%
+                          left_join(tyre_deg, by = c("stintl", "tyre")) %>%
+                            mutate(base = 98) %>%
+                            left_join(tyre_offset, by = "tyre") %>%
+                              mutate(fuelcor = (lap-1)*0.06) %>%
+                              mutate(laptime = (base- fuelcor)/100 * (100 + pred)) %>%
+                                filter(recs != 1) %>%
+                                ungroup() %>%
+                                  group_by(recs) %>%
+                                    summarise(tottime = sum(laptime) + 25 *2) 
+
+
+ter5 = ter4 %>% filter(stop == "stop1") %>%
+                    select(recs, lap, tyre)
+
+colnames(ter5)[2] = "lap1"
+colnames(ter5)[3] = "tyre1"
+
+
+
+ter6 = ter4 %>% filter(stop == "stop2") %>%
+                    select(recs, lap, tyre)
+
+colnames(ter6)[2] = "lap2"
+colnames(ter6)[3] = "tyre2"
+
+ter7 = ter5 %>% left_join(ter6, by= "recs")
+
+
+
+races2 = races %>% left_join(ter7, by = "recs") %>%
+                      mutate(strategy = paste(x, lap1, tyre1, lap2, tyre2, sep = "-")) %>%
+                        slice_min(tottime) %>%
+                          select(recs, tottime, strategy) %>%
+                            mutate(stops = 2)
+
+
+
+
+```
+
+
+
+```{r}
+
+
+
+rus_mod = soft_mod %>% filter(Driver == "GAS")
+
+
+rmod = lm(perdiff ~ stintl + stintl2, rus_mod)
+
+
+rusp = predict(rmod, test_r)
+
+rusmod2 = rus_mod %>% select(stintl, perdiff)
+
+
+comp = test_r %>% bind_cols(rusp) %>%
+                      left_join(rusmod2, by = "stintl") %>%
+                      filter(stintl < 10) %>%
+                        select(-stintl2, -Driver, -stin)
+                   
+
+colnames(comp)[2] = "pred"
+
+
+comp2 = comp %>% pivot_longer(cols = 2:3, names_to = "meas", values_to = "preds")
+
+
+ggplot(comp2, aes(x = stintl, y = preds, col = meas)) + geom_point()
+
+
+
+
+
+
+```
