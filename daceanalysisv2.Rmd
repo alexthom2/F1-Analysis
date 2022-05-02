@@ -107,30 +107,6 @@ tyreuse <- read_csv("F1 Tyre Usage.csv")
 
 
 
-```{r}
-
-
- 
-min_lap <- laptimes %>% mutate(lapt = milliseconds/1000) %>%
-                              
-                            group_by(raceId) %>%
-                              slice_min(lapt) %>%
-                              select(raceId, lapt) 
-
-
-
-colnames(min_lap)[2] <- "minlap"
-
-val_lap = laptimes %>% mutate(lapt = milliseconds/1000) %>%
-                              left_join(min_lap, by = "raceId")  %>%
-                                  mutate(delta = lapt/minlap-1) %>%
-                                    filter(delta < 0.1)
-
-
-
-```
-
-
 
 
 
@@ -149,21 +125,24 @@ lapcount <- results %>% group_by(raceId) %>%
 colnames(lapcount)[2] <- "tlap"
 
   
-all_race <- val_lap %>% left_join(races, by = "raceId") %>%
+all_race <- laptimes %>% left_join(races, by = "raceId") %>%
                                 left_join(drivers, by = "driverId") %>%
                         left_join(pits, by = c("raceId", "lap", "driverId")) %>%
                             left_join(lapcount, by = "raceId") %>%
                                mutate(seconds = milliseconds.x / 1000) %>%
-                                      fill(stop) %>%
-                                          filter(year == 2022) %>%
-                                          filter(round == 1) %>%
+                                      group_by(code, raceId) %>%
+                                      fill(stop, .direction = "down") %>%
                                       mutate(stint = if_else(is.na(stop),1, 1 + stop)) %>%
                                       mutate(lugdur = lag(duration)) %>%
                                         mutate(stopfl = if_else(!is.na(duration),1 ,
                                                           if_else(!is.na(lugdur), 1, 2))) %>%
                                             left_join(lapcount, by = "raceId") %>%
                                               mutate(fuelcor = (tlap.y-(lap-1))* 0.06)  %>%
-                                                mutate(lap5 = seconds - fuelcor)
+                                                mutate(lap5 = seconds - fuelcor) %>%
+                                                    left_join(min_lap, by = "raceId")  %>%
+                                                  mutate(delta = seconds/minlap-1) %>%
+                                                          filter(delta < 0.1)
+
                                                 
  
 
@@ -184,7 +163,7 @@ all_race2 = all_race %>% left_join(all_race_ms, by = c("lap", "code", "stint")) 
                                filter(is.na(lugdur)) %>% 
                                   mutate(perdiff = lap5/min_lap1-1)  %>%
                                     mutate(valfil = seconds - min_lap1) %>%
-                                        select(raceId, driverId, lap, position, lapt, year, name, round, code, stint, lap5)
+                                        select(raceId, driverId, lap, position, seconds, year, name, round, code, stint, lap5)
 
 
 
