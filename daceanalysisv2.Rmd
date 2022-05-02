@@ -203,7 +203,7 @@ code = c("LEC", "LEC", "LEC","LEC", "SAI", "SAI", "SAI", "SAI", "HAM", "HAM", "H
 
 tyre = c("c3", "c3", "c2", "c3","c3", "c3", "c2", "c3", "c3", "c1", "c2", "c3", "c3", "c1", "c2", "c3","c3", "c3", "c2", "c3","c3", "c2", "c2", "c3","c3", "c2", "c1", "c3","c3", "c2", "c3", "c3",
          "c3", "c1", "c2", "c3","c3", "c2", "c2", "c3", "c3","c2", "c3", "c3","c3", "c2", "c3" , "c3", "c2", "c2", "c3", "c2", "c3", "c1", "c3", "c2", "c1", "c3", "c3", "c3", "c3", "c2", "c3", "c3",
-         "c3", "c2", "c3", "c3", "c2", "c3","c3", "C3", "c3", "c2", "c3", "c3", "c2", "c1"
+         "c3", "c2", "c3", "c3", "c2", "c3","c3", "c3", "c3", "c2", "c3", "c3", "c2", "c1"
          )
 
 
@@ -241,10 +241,52 @@ stint_min2 = all_race2 %>% left_join(stint_min, by = c("raceId", "code", "stint"
                                           filter(round == 1) %>%
                                               left_join(bah_strat, by = c("code", "stint")) %>%
                                                   group_by(code, stint) %>%
-                                                      mutate(stintl = 1:n())
+                                                      mutate(stintl = 1:n()) %>% 
+                                                                  filter(stintl > 1)
 
 
 ggplot(stint_min2, aes(x = stintl, y = delta)) + geom_point() + facet_wrap(~tyre)
+
+
+```
+
+
+
+
+
+```{r}
+
+
+soft_stin_ex = soft_stin %>% filter(stintl < 21) %>% 
+                              group_by(stintl) %>% 
+                                slice_max(pred) %>% 
+                                  select(stintl, pred) %>% 
+                                      mutate(method = "predicted")
+
+
+colnames(soft_stin_ex)[2] = "delta" 
+
+
+soft_comp = stint_min2 %>% filter(tyre == "c3") %>% 
+                              select(stintl, delta) %>%
+                                  mutate(method = "Actual") %>% 
+                                      bind_rows(soft_stin_ex)
+
+
+
+ggplot(soft_comp, aes(x = stintl, y= delta, col = method)) + geom_point()
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```
