@@ -379,7 +379,12 @@ fast_lap_all2 = all_race2 %>% filter(year == 2022)  %>%
 
 
 
-ggplot(fast_lap_all2, aes(x = round, y = perdiffm, col = teams)) + geom_point()
+ggplot(fast_lap_all2, aes(x = round, y = perdiffm, col = teams)) + geom_point(size = 5, alpha = 0.5) +
+                                                                            scale_color_manual(values = cols) +
+                                                                                scale_y_continuous(labels = percent_format()) + 
+                                                                                    labs(x = "Round", y = "Delta to Fastest %", title = "Season 2022 Race Pace Trend") + 
+                                                                          theme(panel.background = element_rect(fill = "#19191c"), panel.grid.minor =  element_blank(), panel.grid.major.y = element_line(colour = "#9c9a9a"), panel.grid.major.x = element_blank(), plot.background = element_rect(fill = "#19191c"), legend.background = element_rect(fill = "#19191c"), axis.text = element_text(colour = "white"), plot.title = element_text(colour = "white", face = "bold"), axis.title = element_text(colour = "white"), legend.text = element_text(colour = "white"), legend.title = element_text(colour = "white"), legend.key = element_rect(fill = "#19191c", colour = "#19191c"))
+ 
 
 
 
