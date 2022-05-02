@@ -310,7 +310,7 @@ colnames(fast_lap)[2] = "flap"
 fast_lap2 = stint_min2 %>% left_join(fast_lap, by = "lap") %>% 
                                 mutate(perdiff = lap5/flap -1 ) %>% 
                                     group_by(code) %>% 
-                                      summarise(perdiffm = mean(perdiff))
+                                      summarise(perdiffm = median(perdiff))
 
 
 
@@ -321,6 +321,59 @@ ggplot(fast_lap2, aes(x = reorder(code,perdiffm), y = perdiffm)) + geom_col() + 
 ```
 
 
+
+
+```{r}
+
+
+
+
+teams = c("Red Bull","Red Bull", "Mercedes", "Mercedes", "Ferrari", "Ferrari", "Mclaren", "Mclaren", "Alpine",  "Alpine",  "Alpha Tauri", "Alpha Tauri", "Aston Martin", "Aston Martin","Aston Martin" , "Williams",  "WIlliams", "Alfa Romea",  "Alfa Romeo",  "Haas","Haas")
+
+
+code = c("PER", "VER", "HAM" , "RUS", "SAI" , "LEC" , "NOR" , "RIC" ,  "ALO", "OCO" , "GAS", "TSU", "STR", "HUL" ,"VET","ALB" , "LAT",  "BOT", "ZHO" , "MAG", "MSC")
+
+
+teamdri = tibble(teams, code)
+
+
+
+fast_lap_all = all_race2 %>%  filter(year == 2022)  %>% 
+                                group_by(raceId, lap) %>% 
+                                    slice_min(lap5) %>% 
+                                      select(raceId, lap, lap5)
+
+
+colnames(fast_lap_all)[3] = "flap"
+
+
+fast_lap_all2 = all_race2 %>% filter(year == 2022)  %>% 
+                                      left_join(fast_lap_all, by = c("raceId", "lap")) %>% 
+                                        mutate(perdiff = lap5/flap -1 ) %>% 
+                                          left_join(teamdri, by = "code") %>% 
+                                              group_by(raceId, teams, lap) %>% 
+                                                slice_min(perdiff) %>% 
+                                                    ungroup() %>% 
+                                                        group_by(round, teams) %>% 
+                                                            summarise(perdiffm = median(perdiff))
+  
+
+
+
+
+
+
+ggplot(fast_lap_all2, aes(x = round, y = perdiffm, col = teams)) + geom_point()
+
+
+
+
+
+
+
+
+
+```
 
 
 
