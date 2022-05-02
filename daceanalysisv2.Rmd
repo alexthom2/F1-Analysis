@@ -259,8 +259,8 @@ ggplot(stint_min2, aes(x = stintl, y = delta)) + geom_point() + facet_wrap(~tyre
 
 soft_stin_ex = soft_stin %>% filter(stintl < 21) %>% 
                               group_by(stintl) %>% 
-                                slice_max(pred) %>% 
-                                  select(stintl, pred) %>% 
+                              summarise(avpred = mean(pred)) %>% 
+                                  select(stintl, avpred) %>% 
                                       mutate(method = "predicted")
 
 
@@ -290,3 +290,37 @@ ggplot(soft_comp, aes(x = stintl, y= delta, col = method)) + geom_point()
 
 
 ```
+
+
+
+
+
+```{r}
+
+
+
+fast_lap = stint_min2 %>% group_by(lap) %>% 
+                              slice_min(lap5) %>% 
+                                select(lap, lap5)
+
+
+colnames(fast_lap)[2] = "flap"
+
+
+fast_lap2 = stint_min2 %>% left_join(fast_lap, by = "lap") %>% 
+                                mutate(perdiff = lap5/flap -1 ) %>% 
+                                    group_by(code) %>% 
+                                      summarise(perdiffm = mean(perdiff))
+
+
+
+ggplot(fast_lap2, aes(x = reorder(code,perdiffm), y = perdiffm)) + geom_col() + coord_flip()
+
+
+
+```
+
+
+
+
+
