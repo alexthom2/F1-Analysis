@@ -18,6 +18,8 @@ library(tidyverse)
 library(readxl)
 
 
+library(scales)
+
 
 ```
 
@@ -299,6 +301,20 @@ ggplot(soft_comp, aes(x = stintl, y= delta, col = method)) + geom_point()
 
 
 
+cols = c("Red Bull" = "#1E5BC6", "Mercedes" = "#6CD3BF", "Ferrari" = "#ED1C24", "Mclaren" = "#F58020",   "Alpine" = "#2293D1",  "Alpha Tauri" = "#01102F", "Williams" = "#37BEDD", "Alfa Romeo" = "#B12039",  "Haas" = 	"#B6BABD", "Aston Martin" = "#2D826D")
+
+
+
+
+teams = c("Red Bull","Red Bull", "Mercedes", "Mercedes", "Ferrari", "Ferrari", "Mclaren", "Mclaren", "Alpine",  "Alpine",  "Alpha Tauri", "Alpha Tauri", "Aston Martin", "Aston Martin","Aston Martin" , "Williams",  "Williams", "Alfa Romeo",  "Alfa Romeo",  "Haas","Haas")
+
+
+code = c("PER", "VER", "HAM" , "RUS", "SAI" , "LEC" , "NOR" , "RIC" ,  "ALO", "OCO" , "GAS", "TSU", "STR", "HUL" ,"VET","ALB" , "LAT",  "BOT", "ZHO" , "MAG", "MSC")
+
+
+teamdri = tibble(teams, code)
+
+
 fast_lap = stint_min2 %>% group_by(lap) %>% 
                               slice_min(lap5) %>% 
                                 select(lap, lap5)
@@ -310,13 +326,23 @@ colnames(fast_lap)[2] = "flap"
 fast_lap2 = stint_min2 %>% left_join(fast_lap, by = "lap") %>% 
                                 mutate(perdiff = lap5/flap -1 ) %>% 
                                     group_by(code) %>% 
-                                      summarise(perdiffm = median(perdiff))
+                                      summarise(perdiffm = median(perdiff)) %>% 
+                                        left_join(teamdri, by = "code")
 
 
 
-ggplot(fast_lap2, aes(x = reorder(code,perdiffm), y = perdiffm)) + geom_col() + coord_flip()
+ggplot(fast_lap2, aes(x = reorder(code,perdiffm), y = perdiffm, fill = teams)) + 
+                                                                        geom_col() + 
+                                                                            coord_flip() + 
+                                                                                scale_y_continuous(labels = percent_format()) +
+                                                                                scale_fill_manual(values = cols) + 
+                                                                                  guides(fill = F) + 
+                                                                                        labs(x = "", y = "Delta to Fastest %", title = "Pace Rank All Drivers") + 
+                                                                                       theme(panel.background = element_rect(fill = "#19191c"), panel.grid.minor =  element_blank(), panel.grid.major.x = element_line(colour = "#9c9a9a"), panel.grid.major.y = element_blank(), plot.background = element_rect(fill = "#19191c"), legend.background = element_rect(fill = "#c9c9c9"), axis.text = element_text(colour = "white"), plot.title = element_text(colour = "white", face = "bold"), axis.title = element_text(colour = "white"))
+ 
 
 
+ggsave("pacerank.png", last_plot())
 
 ```
 
@@ -325,16 +351,6 @@ ggplot(fast_lap2, aes(x = reorder(code,perdiffm), y = perdiffm)) + geom_col() + 
 
 ```{r}
 
-
-
-
-teams = c("Red Bull","Red Bull", "Mercedes", "Mercedes", "Ferrari", "Ferrari", "Mclaren", "Mclaren", "Alpine",  "Alpine",  "Alpha Tauri", "Alpha Tauri", "Aston Martin", "Aston Martin","Aston Martin" , "Williams",  "WIlliams", "Alfa Romea",  "Alfa Romeo",  "Haas","Haas")
-
-
-code = c("PER", "VER", "HAM" , "RUS", "SAI" , "LEC" , "NOR" , "RIC" ,  "ALO", "OCO" , "GAS", "TSU", "STR", "HUL" ,"VET","ALB" , "LAT",  "BOT", "ZHO" , "MAG", "MSC")
-
-
-teamdri = tibble(teams, code)
 
 
 
