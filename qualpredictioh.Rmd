@@ -49,7 +49,7 @@ prac1_scrape <- function(year, raceno, race) {
     html_nodes("body > div.site-wrapper > main > article > div > div.ResultArchiveContainer > div.resultsarchive-wrapper > div.resultsarchive-content.group > div.resultsarchive-col-right > table") %>%
     html_table() 
   
-  
+   dat2 <- as.data.frame(dat2)
   
   
   colnames(dat2)[1] <- "col1"
@@ -228,8 +228,8 @@ prac120 <- bind_rows(prac1_scrape(2020, 1045, "austria"), prac1_scrape(2020, 104
                      prac1_scrape(2020, 1049, "great-britain"),prac1_scrape(2020, 1050, "spain"), 
                      prac1_scrape(2020, 1051, "belgium"), prac1_scrape(2020, 1052, "italy"), 
                      prac1_scrape(2020, 1053, "italy"),prac1_scrape(2020, 1054, "russia"),
-                     prac1_scrape(2020, 1055, "germany"), prac1_scrape(2020, 1056, "portugal"), 
-                     prac1_scrape(2020, 1057, "italy"), prac1_scrape(2020, 1058, "turkey"), 
+                     prac1_scrape(2020, 1056, "portugal"), 
+                      prac1_scrape(2020, 1058, "turkey"), 
                      prac1_scrape(2020, 1059, "bahrain"), prac1_scrape(2020, 1060, "bahrain"), 
                      prac1_scrape(2020, 1061, "abu-dhabi"))
 
@@ -245,7 +245,7 @@ prac121 <-  bind_rows(prac1_scrape(2021, 1064, "bahrain"), prac1_scrape(2021, 10
                       prac1_scrape(2021, 1073, "hungry"), prac1_scrape(2021, 1074, "belgium"), 
                       prac1_scrape(2021, 1076, "italy"), prac1_scrape(2021, 1078, "turkey"), 
                       prac1_scrape(2021, 1075, "netherlands"), prac1_scrape(2021, 1077, "russia"),  prac1_scrape(2021,1105, "qatar"),
-                      prac1_scrape(2021,1106, "saudi-arabia"), prac1_scrape(2021,995, "japan"), prac1_scrape(2021,1102, "united-states"),
+                      prac1_scrape(2021,1106, "saudi-arabia"), prac1_scrape(2021,1102, "united-states"),
                       prac1_scrape(2021,1103, "mexico"), prac1_scrape(2021,1104, "brazil"),
                       prac1_scrape(2021, 1107, "abu-dhabi"))
 
@@ -319,19 +319,6 @@ prac220 <- bind_rows(prac2_scrape(2020, 1045, "austria"), prac2_scrape(2020, 104
 
 
 
-qual21 <-  bind_rows(qual_scrape(2021, 1064, "bahrain"), qual_scrape(2021, 1065, "italy"), 
-                     qual_scrape(2021, 1066, "portugal"), qual_scrape(2021, 1086, "spain"),                        
-                     qual_scrape(2021, 1067, "monaco"),qual_scrape(2021, 1068, "azerbaijan"), 
-                     qual_scrape(2021, 1070, "france"), qual_scrape(2021, 1071, "austria"), 
-                        qual_scrape(2021, 1092, "austria"),qual_scrape(2021, 1072, "great-britain"),
-                        qual_scrape(2021, 1073, "hungry"), qual_scrape(2021, 1074, "belgium"), 
-                        qual_scrape(2021, 1076, "italy"), qual_scrape(2021, 1078, "turkey"), 
-                        qual_scrape(2021, 1075, "netherlands"), qual_scrape(2021, 1077, "russia"),  qual_scrape(2021,1105, "qatar"),
-                     qual_scrape(2021,1106, "saudi-arabia"),  qual_scrape(2021,1102, "united-states"),
-                     qual_scrape(2021,1103, "mexico"), qual_scrape(2021,1104, "brazil"),
-                        qual_scrape(2021, 1107, "abu-dhabi"))
-
-
 
 
 prac221 <-  bind_rows(prac2_scrape(2021, 1064, "bahrain"), prac2_scrape(2021, 1065, "italy"), 
@@ -342,7 +329,7 @@ prac221 <-  bind_rows(prac2_scrape(2021, 1064, "bahrain"), prac2_scrape(2021, 10
                         prac2_scrape(2021, 1073, "hungry"), prac2_scrape(2021, 1074, "belgium"), 
                         prac2_scrape(2021, 1076, "italy"), prac2_scrape(2021, 1078, "turkey"), 
                         prac2_scrape(2021, 1075, "netherlands"), prac2_scrape(2021, 1077, "russia"),  prac2_scrape(2021,1105, "qatar"),
-                     prac2_scrape(2021,1106, "saudi-arabia"), prac2_scrape(2021,995, "japan"), prac2_scrape(2021,1102, "united-states"),
+                     prac2_scrape(2021,1106, "saudi-arabia"), prac2_scrape(2021,1102, "united-states"),
                      prac2_scrape(2021,1103, "mexico"), prac2_scrape(2021,1104, "brazil"),
                         prac2_scrape(2021, 1107, "abu-dhabi"))
 
@@ -441,5 +428,16 @@ qual21 <-  bind_rows(qual_scrape(2021, 1064, "bahrain"), qual_scrape(2021, 1065,
 
 
 ````
+
+
+
+
+```{r}
+
+
+
+ 
+
+```
 
 
