@@ -128,7 +128,7 @@ prac2_scrape <- function(year, raceno, race) {
 
 
 
-prac2_scrape <- function(year, raceno, race) {
+qual_scrape <- function(year, raceno, race) {
   
   Sys.sleep(1)
   
@@ -435,9 +435,102 @@ qual21 <-  bind_rows(qual_scrape(2021, 1064, "bahrain"), qual_scrape(2021, 1065,
 ```{r}
 
 
+qual116b <- qual116 %>% group_by(race1) %>%
+                            mutate(rank = qtime)
+
+
+dat16  <- prac116 %>%
+                    left_join(prac216, by = c("race1", "No")) %>%
+                      left_join(qual116, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "Toro", "Toro Rosso", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Force", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+
+
+
+
+dat17  <- prac117 %>%
+                    left_join(prac217, by = c("race1", "No")) %>%
+                      left_join(qual117, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "Toro", "Toro Rosso", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Force", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+dat18  <- prac118 %>%
+                    left_join(prac218, by = c("race1", "No")) %>%
+                      left_join(qual118, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "Toro", "Toro Rosso", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Force", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+dat19  <- prac119 %>%
+                    left_join(prac219, by = c("race1", "No")) %>%
+                      left_join(qual119, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "Toro", "Toro Rosso", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Force", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+dat15  <- prac115 %>%
+                    left_join(prac215, by = c("race1", "No")) %>%
+                      left_join(qual15, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "Toro", "Toro Rosso", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Force", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+f1_data <- dat16 %>% bind_rows(dat17) %>%
+                            bind_rows(dat18) %>%
+                                bind_rows(dat19) %>%
+                                  bind_rows(dat15) %>%
+                                  select(prac1pos, No, pract1t, pract1l, prac2pos, pract2t, pract2l, qtime, race1) %>%
+                                      drop_na()
+
 
  
 
 ```
+
+
+
 
 
