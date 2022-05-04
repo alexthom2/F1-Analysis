@@ -453,7 +453,8 @@ dat16  <- prac116 %>%
                                                                 if_else(n1 == "Toro", "Toro Rosso", 
                                                                         if_else(n1 == "Williams", "Williams",
                                                                                 if_else(n1 == "Force", "Racing Point",
-                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other")))))))))))  %>%
+                              mutate(season = 2016)
 
 
 
@@ -472,7 +473,12 @@ dat17  <- prac117 %>%
                                                                 if_else(n1 == "Toro", "Toro Rosso", 
                                                                         if_else(n1 == "Williams", "Williams",
                                                                                 if_else(n1 == "Force", "Racing Point",
-                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) %>%
+                              mutate(season = 2017)
+
+
+
+
 dat18  <- prac118 %>%
                     left_join(prac218, by = c("race1", "No")) %>%
                       left_join(qual118, by = c("race1", "No") ) %>%
@@ -487,7 +493,13 @@ dat18  <- prac118 %>%
                                                                 if_else(n1 == "Toro", "Toro Rosso", 
                                                                         if_else(n1 == "Williams", "Williams",
                                                                                 if_else(n1 == "Force", "Racing Point",
-                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other")))))))))))  %>%
+                              mutate(season = 2018)
+
+
+
+
+
 dat19  <- prac119 %>%
                     left_join(prac219, by = c("race1", "No")) %>%
                       left_join(qual119, by = c("race1", "No") ) %>%
@@ -502,7 +514,12 @@ dat19  <- prac119 %>%
                                                                 if_else(n1 == "Toro", "Toro Rosso", 
                                                                         if_else(n1 == "Williams", "Williams",
                                                                                 if_else(n1 == "Force", "Racing Point",
-                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) %>%
+                         mutate(season = 2019)
+
+  
+  
+  
 dat15  <- prac115 %>%
                     left_join(prac215, by = c("race1", "No")) %>%
                       left_join(qual15, by = c("race1", "No") ) %>%
@@ -517,11 +534,59 @@ dat15  <- prac115 %>%
                                                                 if_else(n1 == "Toro", "Toro Rosso", 
                                                                         if_else(n1 == "Williams", "Williams",
                                                                                 if_else(n1 == "Force", "Racing Point",
-                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) 
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) %>%
+                                mutate(season = 2015)
+
+ 
+  
+dat20  <- prac120 %>%
+                    left_join(prac220, by = c("race1", "No")) %>%
+                      left_join(qual20, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Renault", "Renault", 
+                                                                if_else(n1 == "AlphaTauri", "AlphaTauri", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Racing", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) %>%
+                                mutate(season = 2020)
+
+
+
+
+
+dat21  <- prac121 %>%
+                    left_join(prac221, by = c("race1", "No")) %>%
+                      left_join(qual21, by = c("race1", "No") ) %>%
+                        select(-Car.y, -gp.y) %>%
+                          separate(Car.x, c("n1", "n2"), sep = " ") %>%
+                  mutate(Team = if_else(n1 == "Mercedes", "Mercedes", 
+                        if_else(n1 == "Red", "Red Bull", 
+                                if_else(n1 == "Ferrari", "Ferrari", 
+                                        if_else(n1 == "Haas", "Haas", 
+                                                if_else(n1 == "McLaren", "McLaren",
+                                                        if_else(n1 == "Alpine", "Alpine", 
+                                                                if_else(n1 == "AlphaTauri", "Alpha Tauri", 
+                                                                        if_else(n1 == "Williams", "Williams",
+                                                                                if_else(n1 == "Racing", "Racing Point",
+                                                                                        if_else(n1 == "Sauber", "Alfa Romeo", "other"))))))))))) %>%
+                                mutate(season = 2021)
+
+
+
+
+
+
 f1_data <- dat16 %>% bind_rows(dat17) %>%
                             bind_rows(dat18) %>%
                                 bind_rows(dat19) %>%
                                   bind_rows(dat15) %>%
+                                    bind_rows(dat20) %>%
                                   select(prac1pos, No, pract1t, pract1l, prac2pos, pract2t, pract2l, qtime, race1) %>%
                                       drop_na()
 
@@ -530,7 +595,46 @@ f1_data <- dat16 %>% bind_rows(dat17) %>%
 
 ```
 
+```{r}
 
+
+
+
+model_dat = f1_data %>% select(prac1pos, pract1l, pract1t, pract2l, pract2t, prac2pos, qtime)
+
+
+
+
+split = initial_split(model_dat, prop = 0.8)
+
+
+train_dat = training(split)
+
+test_dat = testing(split)
+
+
+
+
+
+```
+
+
+
+```{r}
+
+
+lm_mod = linear_reg() %>%
+              set_engine("lm") %>%
+                    fit(qtime~., train_dat)
+
+
+
+lm_mod
+
+
+
+
+```
 
 
 
