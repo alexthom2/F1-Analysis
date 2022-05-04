@@ -1,0 +1,445 @@
+---
+title: "qual pred"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+library(glue)
+library(rvest)
+library(readxl)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+```{r}
+######################## fucntion ###############################################
+
+
+
+prac1_scrape <- function(year, raceno, race) {
+  
+  Sys.sleep(1)
+  
+  cat(".")
+  
+  url <- glue("https://www.formula1.com/en/results.html/{year}/races/{raceno}/{race}/practice-1.html")
+  
+  dat2 <-   read_html(url) %>%
+    html_nodes("body > div.site-wrapper > main > article > div > div.ResultArchiveContainer > div.resultsarchive-wrapper > div.resultsarchive-content.group > div.resultsarchive-col-right > table") %>%
+    html_table() 
+  
+  
+  
+  
+  colnames(dat2)[1] <- "col1"
+  colnames(dat2)[9] <- "col2"
+  
+  dat4 <- dat2 %>% separate(Time, c("min", "sec"), ":")
+  
+  dat4$min <- as.numeric(dat4$min)
+  dat4$sec <- as.numeric(dat4$sec)
+  
+  dat5 <- dat4 %>% mutate(time = min * 60 + sec) %>%
+    select(Pos, No, Car, time, Laps)
+  
+  
+  first <- dat5$time[[1]]
+  
+  
+  dat6 <- dat5 %>% mutate(delta = time- first) %>%
+    mutate(gp = race) %>%
+    mutate(race1 = raceno)
+  
+  colnames(dat6)[1] <- "prac1pos"
+  colnames(dat6)[4] <- "pract1t"
+  colnames(dat6)[5] <- "pract1l"
+  colnames(dat6)[6] <- "pract1d"
+  
+  
+  
+  return(dat6)
+  
+}
+prac2_scrape <- function(year, raceno, race) {
+  
+  Sys.sleep(1)
+  
+  cat(".")
+  
+  url <- glue("https://www.formula1.com/en/results.html/{year}/races/{raceno}/{race}/practice-2.html")
+  
+  dat2 <-   read_html(url) %>%
+    html_nodes("body > div.site-wrapper > main > article > div > div.ResultArchiveContainer > div.resultsarchive-wrapper > div.resultsarchive-content.group > div.resultsarchive-col-right > table") %>%
+    html_table() 
+  
+  dat2 <- as.data.frame(dat2)
+  
+  colnames(dat2)[1] <- "col1"
+  colnames(dat2)[9] <- "col2"
+  
+  dat4 <- dat2 %>% separate(Time, c("min", "sec"), ":")
+  
+  dat4$min <- as.numeric(dat4$min)
+  dat4$sec <- as.numeric(dat4$sec)
+  
+  dat5 <- dat4 %>% mutate(time = min * 60 + sec) %>%
+    select(Pos, No, Car, time, Laps)
+  
+  
+  first <- dat5$time[[1]]
+  
+  
+  dat6 <- dat5 %>% mutate(delta = time- first) %>%
+    mutate(gp = race) %>%
+    mutate(race1 = raceno)
+  
+  colnames(dat6)[1] <- "prac2pos"
+  colnames(dat6)[4] <- "pract2t"
+  colnames(dat6)[5] <- "pract2l"
+  colnames(dat6)[6] <- "pract2d"
+  
+  
+  
+  return(dat6)
+  
+}
+
+
+
+
+prac2_scrape <- function(year, raceno, race) {
+  
+  Sys.sleep(1)
+  
+  cat(".")
+  
+  url <- glue("https://www.formula1.com/en/results.html/{year}/races/{raceno}/{race}/qualifying.html")
+  
+  dat2 <-   read_html(url) %>%
+    html_nodes("body > div.site-wrapper > main > article > div > div.ResultArchiveContainer > div.resultsarchive-wrapper > div.resultsarchive-content.group > div.resultsarchive-col-right > table") %>%
+    html_table() 
+  
+  dat2 <- as.data.frame(dat2)
+  
+  colnames(dat2)[1] <- "col1"
+  
+  dat3 <- dat2 %>% select(Pos, No, Car, Q1, Q2, Q3) %>%
+    gather("qual", "time", -c(Pos, No, Car)) %>%
+    separate(time, c("min", "sec"), ":")
+  
+  
+  dat3$min <- as.numeric(dat3$min)
+  dat3$sec <- as.numeric(dat3$sec)
+  
+  
+  dat5 <- dat3 %>% mutate(time = min * 60 + sec) %>%
+    filter(!is.na(time)) %>%
+    group_by(No) %>%
+    filter(time == min(time)) %>%
+    select(No, time) %>%
+    mutate(race1 = raceno) 
+  
+  
+  colnames(dat5)[2] <- "qtime"
+  
+  return(dat5)
+  
+}
+
+
+
+
+
+````
+
+
+### practice1 data 
+
+
+```{r}
+
+prac118 <- bind_rows(prac1_scrape(2018,979, "australia"), prac1_scrape(2018,980, "bahrain"), prac1_scrape(2018,981, "china"), 
+                     prac1_scrape(2018,982, "azerbaijan"), prac1_scrape(2018,983, "spain"), prac1_scrape(2018,984, "monaco"),
+                     prac1_scrape(2018,985, "canada"), prac1_scrape(2018,986, "france"), prac1_scrape(2018,987, "austria"),
+                     prac1_scrape(2018,988, "great_britain"), prac1_scrape(2018,989, "germany"), prac1_scrape(2018,990, "hungary"),
+                     prac1_scrape(2018,991, "belgium"), prac1_scrape(2018,992, "italy"), prac1_scrape(2018,993, "singapore"),
+                     prac1_scrape(2018,994, "russia"), prac1_scrape(2018,995, "japan"), prac1_scrape(2018,996, "united-states"),
+                     prac1_scrape(2018,997, "mexico"), prac1_scrape(2018,998, "brazil"), prac1_scrape(2018,999, "abu-dhabi"))
+
+prac117 <- bind_rows(prac1_scrape(2017, 959, "australia"), prac1_scrape(2017, 960, "china"), prac1_scrape(2017, 961, "bahrain"), 
+                     prac1_scrape(2017, 962, "russia"), prac1_scrape(2017, 963, "spain"), prac1_scrape(2017, 964, "monaco"),
+                     prac1_scrape(2017, 965, "canada"), prac1_scrape(2017, 966, "azerbaijan"), prac1_scrape(2017,967, "austria"),
+                     prac1_scrape(2017,968, "great_britain"), prac1_scrape(2017,969, "hungary"), prac1_scrape(2017,970, "belgium"),
+                     prac1_scrape(2017,971, "italy"), prac1_scrape(2017,972, "singapore"), prac1_scrape(2017,973, "malaysia"),
+                     prac1_scrape(2017,974, "japan"), prac1_scrape(2017,975, "united-states"), prac1_scrape(2017,976, "mexico"),
+                     prac1_scrape(2017,977, "brazil"), prac1_scrape(2017,978, "abu-dhabi"))
+
+prac116 <- bind_rows(prac1_scrape(2016, 938, "australia"), prac1_scrape(2016, 939, "bahrain"), prac1_scrape(2016, 940, "china"), 
+                     prac1_scrape(2016, 941, "russia"), prac1_scrape(2016, 942, "spain"), prac1_scrape(2016, 943, "monaco"),
+                     prac1_scrape(2016, 944, "canada"), prac1_scrape(2016, 958, "europe"), prac1_scrape(2017,967, "austria"),
+                     prac1_scrape(2016,946, "great_britain"), prac1_scrape(2016,947, "hungary"), prac1_scrape(2016,948, "germany"),
+                     prac1_scrape(2016,949, "belgium"), prac1_scrape(2016,950, "italy"), prac1_scrape(2016,951, "singapore"),
+                     prac1_scrape(2016,952, "malaysia"), prac1_scrape(2016,953, "japan"), prac1_scrape(2016,954, "united-states"),
+                     prac1_scrape(2016,955, "mexico"), prac1_scrape(2016,956, "brazil"), prac1_scrape(2016,957, "abu-dhabi"))
+
+prac115 <- bind_rows(prac1_scrape(2015, 917, "australia"), prac1_scrape(2015, 918, "malaysia"), prac1_scrape(2015, 919, "china"), 
+                     prac1_scrape(2015, 920, "bahrain"), prac1_scrape(2015, 921, "spain"), prac1_scrape(2015, 922, "monaco"),
+                     prac1_scrape(2015, 923, "canada"), prac1_scrape(2015,923, "austria"),
+                     prac1_scrape(2015,925, "great_britain"), prac1_scrape(2015,927, "hungary"), 
+                     prac1_scrape(2015,928, "belgium"), prac1_scrape(2015,929, "italy"), prac1_scrape(2015,930, "singapore"),
+                    prac1_scrape(2015,931, "japan"), prac1_scrape(2015, 932, "russia"), prac1_scrape(2015,933, "united-states"),
+                     prac1_scrape(2015,934, "mexico"), prac1_scrape(2015,935, "brazil"), prac1_scrape(2015,936, "abu-dhabi"))
+
+
+
+prac119 <-  bind_rows(prac1_scrape(2019,1000, "australia"), prac1_scrape(2019,1001, "bahrain"), prac1_scrape(2019,1002, "china"), 
+                      prac1_scrape(2019,1003, "azerbaijan"), prac1_scrape(2019,1004, "spain"), prac1_scrape(2019,1005, "monaco"),
+                      prac1_scrape(2019,1006, "canada"), prac1_scrape(2019,1007, "france"),prac1_scrape(2019,1008, "austria"),
+                       prac1_scrape(2019,1009, "great_britain"),prac1_scrape(2019,1010, "germany") )
+
+
+
+
+
+
+prac120 <- bind_rows(prac1_scrape(2020, 1045, "austria"), prac1_scrape(2020, 1046, "austria"), 
+                     prac1_scrape(2020, 1047, "hungary"), prac1_scrape(2020, 1048, "great-britain"),  
+                     prac1_scrape(2020, 1049, "great-britain"),prac1_scrape(2020, 1050, "spain"), 
+                     prac1_scrape(2020, 1051, "belgium"), prac1_scrape(2020, 1052, "italy"), 
+                     prac1_scrape(2020, 1053, "italy"),prac1_scrape(2020, 1054, "russia"),
+                     prac1_scrape(2020, 1055, "germany"), prac1_scrape(2020, 1056, "portugal"), 
+                     prac1_scrape(2020, 1057, "italy"), prac1_scrape(2020, 1058, "turkey"), 
+                     prac1_scrape(2020, 1059, "bahrain"), prac1_scrape(2020, 1060, "bahrain"), 
+                     prac1_scrape(2020, 1061, "abu-dhabi"))
+
+
+
+
+
+prac121 <-  bind_rows(prac1_scrape(2021, 1064, "bahrain"), prac1_scrape(2021, 1065, "italy"), 
+                      prac1_scrape(2021, 1066, "portugal"), prac1_scrape(2021, 1086, "spain"),                        
+                      prac1_scrape(2021, 1067, "monaco"),prac1_scrape(2021, 1068, "azerbaijan"), 
+                      prac1_scrape(2021, 1070, "france"), prac1_scrape(2021, 1071, "austria"), 
+                      prac1_scrape(2021, 1092, "austria"),prac1_scrape(2021, 1072, "great-britain"),
+                      prac1_scrape(2021, 1073, "hungry"), prac1_scrape(2021, 1074, "belgium"), 
+                      prac1_scrape(2021, 1076, "italy"), prac1_scrape(2021, 1078, "turkey"), 
+                      prac1_scrape(2021, 1075, "netherlands"), prac1_scrape(2021, 1077, "russia"),  prac1_scrape(2021,1105, "qatar"),
+                      prac1_scrape(2021,1106, "saudi-arabia"), prac1_scrape(2021,995, "japan"), prac1_scrape(2021,1102, "united-states"),
+                      prac1_scrape(2021,1103, "mexico"), prac1_scrape(2021,1104, "brazil"),
+                      prac1_scrape(2021, 1107, "abu-dhabi"))
+
+
+
+```
+
+
+### practice 2
+
+
+```{r}
+
+prac218 <- bind_rows(prac2_scrape(2018,979, "australia"), prac2_scrape(2018,980, "bahrain"), prac2_scrape(2018,981, "china"), 
+                     prac2_scrape(2018,982, "azerbaijan"), prac2_scrape(2018,983, "spain"), prac2_scrape(2018,984, "monaco"),
+                     prac2_scrape(2018,985, "canada"), prac2_scrape(2018,986, "france"), prac2_scrape(2018,987, "austria"),
+                     prac2_scrape(2018,988, "great_britain"), prac2_scrape(2018,989, "germany"), prac2_scrape(2018,990, "hungary"),
+                     prac2_scrape(2018,991, "belgium"), prac2_scrape(2018,992, "italy"), prac2_scrape(2018,993, "singapore"),
+                     prac2_scrape(2018,994, "russia"), prac2_scrape(2018,995, "japan"), prac2_scrape(2018,996, "united-states"),
+                     prac2_scrape(2018,997, "mexico"), prac2_scrape(2018,998, "brazil"), prac2_scrape(2018,999, "abu-dhabi"))
+
+prac217 <- bind_rows(prac2_scrape(2017, 959, "australia"), prac2_scrape(2017, 960, "china"), prac2_scrape(2017, 961, "bahrain"), 
+                     prac2_scrape(2017, 962, "russia"), prac2_scrape(2017, 963, "spain"), prac2_scrape(2017, 964, "monaco"),
+                     prac2_scrape(2017, 965, "canada"), prac2_scrape(2017, 966, "azerbaijan"), prac2_scrape(2017,967, "austria"),
+                     prac2_scrape(2017,968, "great_britain"), prac2_scrape(2017,969, "hungary"), prac2_scrape(2017,970, "belgium"),
+                     prac2_scrape(2017,971, "italy"), prac2_scrape(2017,972, "singapore"), prac2_scrape(2017,973, "malaysia"),
+                     prac2_scrape(2017,974, "japan"), prac2_scrape(2017,975, "united-states"), prac2_scrape(2017,976, "mexico"),
+                     prac2_scrape(2017,977, "brazil"), prac2_scrape(2017,978, "abu-dhabi"))
+
+prac216 <- bind_rows(prac2_scrape(2016, 938, "australia"), prac2_scrape(2016, 939, "bahrain"), prac2_scrape(2016, 940, "china"), 
+                     prac2_scrape(2016, 941, "russia"), prac2_scrape(2016, 942, "spain"), prac2_scrape(2016, 943, "monaco"),
+                     prac2_scrape(2016, 944, "canada"), prac2_scrape(2016, 958, "europe"), prac2_scrape(2017,967, "austria"),
+                     prac2_scrape(2016,946, "great_britain"), prac2_scrape(2016,947, "hungary"), prac2_scrape(2016,948, "germany"),
+                     prac2_scrape(2016,949, "belgium"), prac2_scrape(2016,950, "italy"), prac2_scrape(2016,951, "singapore"),
+                     prac2_scrape(2016,952, "malaysia"), prac2_scrape(2016,953, "japan"), prac2_scrape(2016,954, "united-states"),
+                     prac2_scrape(2016,955, "mexico"), prac2_scrape(2016,956, "brazil"), prac2_scrape(2016,957, "abu-dhabi"))
+
+prac215 <- bind_rows(prac2_scrape(2015, 917, "australia"), prac2_scrape(2015, 918, "malaysia"), prac2_scrape(2015, 919, "china"), 
+                     prac2_scrape(2015, 920, "bahrain"), prac2_scrape(2015, 921, "spain"), prac2_scrape(2015, 922, "monaco"),
+                     prac2_scrape(2015, 923, "canada"), prac2_scrape(2015,923, "austria"),
+                     prac2_scrape(2015,925, "great_britain"), prac2_scrape(2015,927, "hungary"), 
+                     prac2_scrape(2015,928, "belgium"), prac2_scrape(2015,929, "italy"), prac2_scrape(2015,930, "singapore"),
+                    prac2_scrape(2015,931, "japan"), prac2_scrape(2015, 932, "russia"), prac2_scrape(2015,933, "united-states"),
+                     prac2_scrape(2015,934, "mexico"), prac2_scrape(2015,935, "brazil"), prac2_scrape(2015,936, "abu-dhabi"))
+
+
+
+prac219 <- bind_rows(prac2_scrape(2019,1000, "australia"), prac2_scrape(2019,1001, "bahrain"), prac2_scrape(2019,1002, "china"), 
+                     prac2_scrape(2019,1003, "azerbaijan"), prac2_scrape(2019,1004, "spain"), prac2_scrape(2019,1005, "monaco"),
+                     prac2_scrape(2019,1006, "canada"), prac2_scrape(2019,1007, "france"), prac2_scrape(2019,1008, "austria"),
+                     prac2_scrape(2019,1010, "germany"))
+
+
+
+
+
+
+prac220 <- bind_rows(prac2_scrape(2020, 1045, "austria"), prac2_scrape(2020, 1046, "austria"), 
+                     prac2_scrape(2020, 1047, "hungary"), prac2_scrape(2020, 1048, "great-britain"),  
+                     prac2_scrape(2020, 1049, "great-britain"),prac2_scrape(2020, 1050, "spain"), 
+                     prac2_scrape(2020, 1051, "belgium"), prac2_scrape(2020, 1052, "italy"), 
+                        prac2_scrape(2020, 1053, "italy"),prac2_scrape(2020, 1054, "russia"),
+                        prac2_scrape(2020, 1055, "germany"), prac2_scrape(2020, 1056, "portugal"), 
+                        prac2_scrape(2020, 1057, "italy"), prac2_scrape(2020, 1058, "turkey"), 
+                        prac2_scrape(2020, 1059, "bahrain"), prac2_scrape(2020, 1060, "bahrain"), 
+                        prac2_scrape(2020, 1061, "abu-dhabi"))
+
+
+
+
+
+
+
+qual21 <-  bind_rows(qual_scrape(2021, 1064, "bahrain"), qual_scrape(2021, 1065, "italy"), 
+                     qual_scrape(2021, 1066, "portugal"), qual_scrape(2021, 1086, "spain"),                        
+                     qual_scrape(2021, 1067, "monaco"),qual_scrape(2021, 1068, "azerbaijan"), 
+                     qual_scrape(2021, 1070, "france"), qual_scrape(2021, 1071, "austria"), 
+                        qual_scrape(2021, 1092, "austria"),qual_scrape(2021, 1072, "great-britain"),
+                        qual_scrape(2021, 1073, "hungry"), qual_scrape(2021, 1074, "belgium"), 
+                        qual_scrape(2021, 1076, "italy"), qual_scrape(2021, 1078, "turkey"), 
+                        qual_scrape(2021, 1075, "netherlands"), qual_scrape(2021, 1077, "russia"),  qual_scrape(2021,1105, "qatar"),
+                     qual_scrape(2021,1106, "saudi-arabia"),  qual_scrape(2021,1102, "united-states"),
+                     qual_scrape(2021,1103, "mexico"), qual_scrape(2021,1104, "brazil"),
+                        qual_scrape(2021, 1107, "abu-dhabi"))
+
+
+
+
+prac221 <-  bind_rows(prac2_scrape(2021, 1064, "bahrain"), prac2_scrape(2021, 1065, "italy"), 
+                     prac2_scrape(2021, 1066, "portugal"), prac2_scrape(2021, 1086, "spain"),                        
+                     prac2_scrape(2021, 1067, "monaco"),prac2_scrape(2021, 1068, "azerbaijan"), 
+                     prac2_scrape(2021, 1070, "france"), prac2_scrape(2021, 1071, "austria"), 
+                        prac2_scrape(2021, 1092, "austria"),prac2_scrape(2021, 1072, "great-britain"),
+                        prac2_scrape(2021, 1073, "hungry"), prac2_scrape(2021, 1074, "belgium"), 
+                        prac2_scrape(2021, 1076, "italy"), prac2_scrape(2021, 1078, "turkey"), 
+                        prac2_scrape(2021, 1075, "netherlands"), prac2_scrape(2021, 1077, "russia"),  prac2_scrape(2021,1105, "qatar"),
+                     prac2_scrape(2021,1106, "saudi-arabia"), prac2_scrape(2021,995, "japan"), prac2_scrape(2021,1102, "united-states"),
+                     prac2_scrape(2021,1103, "mexico"), prac2_scrape(2021,1104, "brazil"),
+                        prac2_scrape(2021, 1107, "abu-dhabi"))
+
+
+
+
+````
+
+
+
+#### qualifying 
+
+
+```{r}
+
+
+
+
+qual118 <- bind_rows(qual_scrape(2018,979, "australia"), qual_scrape(2018,980, "bahrain"), qual_scrape(2018,981, "china"),
+                     prac2_scrape(2018,982, "azerbaijan"), prac2_scrape(2018,983, "spain"), prac2_scrape(2018,984, "monaco"),
+                     prac2_scrape(2018,985, "canada"), prac2_scrape(2018,986, "france"), prac2_scrape(2018,987, "austria"),
+                     prac2_scrape(2018,988, "great_britain"), prac2_scrape(2018,989, "germany"), prac2_scrape(2018,990, "hungary"),
+                     prac2_scrape(2018,991, "belgium"), prac2_scrape(2018,992, "italy"), prac2_scrape(2018,993, "singapore"),
+                     prac2_scrape(2018,994, "russia"), prac2_scrape(2018,995, "japan"), prac2_scrape(2018,996, "united-states"),
+                     prac2_scrape(2018,997, "mexico"), prac2_scrape(2018,998, "brazil"), prac2_scrape(2018,999, "abu-dhabi"))
+
+qual117 <- bind_rows(prac2_scrape(2017, 959, "australia"), prac2_scrape(2017, 960, "china"), prac2_scrape(2017, 961, "bahrain"), 
+                     prac2_scrape(2017, 962, "russia"), prac2_scrape(2017, 963, "spain"), prac2_scrape(2017, 964, "monaco"),
+                     prac2_scrape(2017, 965, "canada"), prac2_scrape(2017, 966, "azerbaijan"), prac2_scrape(2017,967, "austria"),
+                     prac2_scrape(2017,968, "great_britain"), prac2_scrape(2017,969, "hungary"), prac2_scrape(2017,970, "belgium"),
+                     prac2_scrape(2017,971, "italy"), prac2_scrape(2017,972, "singapore"), prac2_scrape(2017,973, "malaysia"),
+                     prac2_scrape(2017,974, "japan"), prac2_scrape(2017,975, "united-states"), prac2_scrape(2017,976, "mexico"),
+                     prac2_scrape(2017,977, "brazil"), prac2_scrape(2017,978, "abu-dhabi"))
+
+qual116 <- bind_rows(qual_scrape(2016, 938, "australia"), qual_scrape(2016, 939, "bahrain"), qual_scrape(2016, 940, "china"), 
+                     qual_scrape(2016, 941, "russia"), qual_scrape(2016, 942, "spain"), qual_scrape(2016, 943, "monaco"),
+                     qual_scrape(2016, 944, "canada"), qual_scrape(2016, 958, "europe"), qual_scrape(2017,967, "austria"),
+                     qual_scrape(2016,946, "great_britain"), qual_scrape(2016,947, "hungary"), qual_scrape(2016,948, "germany"),
+                     qual_scrape(2016,949, "belgium"), qual_scrape(2016,950, "italy"), qual_scrape(2016,951, "singapore"),
+                     qual_scrape(2016,952, "malaysia"), qual_scrape(2016,953, "japan"), qual_scrape(2016,954, "united-states"),
+                     qual_scrape(2016,955, "mexico"), qual_scrape(2016,956, "brazil"), qual_scrape(2016,957, "abu-dhabi"))
+
+
+qual15 <- bind_rows(qual_scrape(2015, 917, "australia"), qual_scrape(2015, 918, "malaysia"), qual_scrape(2015, 919, "china"), 
+                     qual_scrape(2015, 920, "bahrain"), qual_scrape(2015, 921, "spain"), qual_scrape(2015, 922, "monaco"),
+                     qual_scrape(2015, 923, "canada"), qual_scrape(2015,923, "austria"),
+                     qual_scrape(2015,925, "great_britain"), qual_scrape(2015,927, "hungary"), 
+                     qual_scrape(2015,928, "belgium"), qual_scrape(2015,929, "italy"), qual_scrape(2015,930, "singapore"),
+                    qual_scrape(2015,931, "japan"), qual_scrape(2015, 932, "russia"), qual_scrape(2015,933, "united-states"),
+                     qual_scrape(2015,934, "mexico"), qual_scrape(2015,935, "brazil"), qual_scrape(2015,936, "abu-dhabi"))
+
+
+
+
+
+qual119 <- bind_rows(qual_scrape(2019,1000, "australia"), qual_scrape(2019,1001, "bahrain"), qual_scrape(2019,1002, "china"),
+                     qual_scrape(2019,1003, "azerbaijan"), qual_scrape(2019,1004, "spain"), qual_scrape(2019,1005, "monaco"),
+                     qual_scrape(2019,1006, "canada"), qual_scrape(2019,1007, "france"),  qual_scrape(2019,1008, "austria"),
+                     qual_scrape(2019,1009, "great_britain"), qual_scrape(2019,1010, "germany"))
+
+
+
+
+
+
+qual20 <- bind_rows(qual_scrape(2020, 1045, "austria"), qual_scrape(2020, 1046, "austria"), 
+                     qual_scrape(2020, 1047, "hungary"), qual_scrape(2020, 1048, "great-britain"),                        
+                    qual_scrape(2020, 1049, "great-britain"),qual_scrape(2020, 1050, "spain"), 
+                     qual_scrape(2020, 1051, "belgium"), qual_scrape(2020, 1052, "italy"), 
+                        qual_scrape(2020, 1053, "italy"),qual_scrape(2020, 1054, "russia"),
+                        qual_scrape(2020, 1055, "germany"), qual_scrape(2020, 1056, "portugal"), 
+                        qual_scrape(2020, 1057, "italy"), qual_scrape(2020, 1058, "turkey"), 
+                        qual_scrape(2020, 1059, "bahrain"), qual_scrape(2020, 1060, "bahrain"), 
+                        qual_scrape(2020, 1061, "abu-dhabi"))
+
+
+
+
+
+
+qual21 <-  bind_rows(qual_scrape(2021, 1064, "bahrain"), qual_scrape(2021, 1065, "italy"), 
+                     qual_scrape(2021, 1066, "portugal"), qual_scrape(2021, 1086, "spain"),                        
+                     qual_scrape(2021, 1067, "monaco"),qual_scrape(2021, 1068, "azerbaijan"), 
+                     qual_scrape(2021, 1070, "france"), qual_scrape(2021, 1071, "austria"), 
+                        qual_scrape(2021, 1092, "austria"),qual_scrape(2021, 1072, "great-britain"),
+                        qual_scrape(2021, 1073, "hungry"), qual_scrape(2021, 1074, "belgium"), 
+                        qual_scrape(2021, 1076, "italy"), qual_scrape(2021, 1078, "turkey"), 
+                        qual_scrape(2021, 1075, "netherlands"), qual_scrape(2021, 1077, "russia"),  qual_scrape(2021,1105, "qatar"),
+                     qual_scrape(2021,1106, "saudi-arabia"),  qual_scrape(2021,1102, "united-states"),
+                     qual_scrape(2021,1103, "mexico"), qual_scrape(2021,1104, "brazil"),
+                        qual_scrape(2021, 1107, "abu-dhabi"))
+
+
+
+
+
+
+````
+
+
