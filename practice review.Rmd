@@ -70,7 +70,7 @@ turk_cleaned <-  x %>% left_join(stint, by = c("Driver", "LapStartDate")) %>%
                                   mutate(lap4 = if_else(is.na(lagl), lap3, lagl)) %>%
                                     mutate(delta2 = lap3 - lap4) %>%
                                       mutate(lap5 = if_else(delta2 > 1, lagl, fueladj_lap))  %>%
-                                        select(DriverNumber, LapNumber, stin, Sector1Time, Sector2Time, Sector3Time, Compound, TyreLife, Team, Driver, stintl, lap5)
+                                        select(DriverNumber, LapNumber, stin, Sector1Time, Sector2Time, Sector3Time, Compound, TyreLife, Team, Driver, stintl, lap5, session)
 
 
 return(turk_cleaned)
@@ -179,25 +179,47 @@ return(comp)
 
 
 
+
+
 # data
 ```{r}
+
+
+
+setwd("~/Projects/F1/Data/FP2")
+
+
+fp1 =  read_xlsx("migpfp1.xlsx")
+
+
+fp12 = fp1 %>% mutate(session = "FP1") 
 
 
 
 setwd("~/Projects/F1/Data/FP2/2022")
 
 
-fp2 = read_xlsx("gp1.xlsx")
+fp2 = read_xlsx("gp5.xlsx")
 
 
 
-sa_22 <- prac_clean(fp2)
+
+fp22 = fp2 %>% mutate(session = "FP2") 
 
 
-rlap = 56
+gp = fp12 %>% 
+              bind_rows(fp22)
+
+
+sa_22 <- prac_clean(gp)
+
+
+rlap = 57
 
 
 ```
+
+
 
 ## summary 
 
@@ -242,7 +264,8 @@ ggplot(sa_22_2, aes(x = TyreLife, y = lap5, col = Compound)) + geom_point() + fa
 
 
 
-min_lap = sa_22_2 %>% ungroup() %>%
+min_lap = sa_22_2 %>% filter(session == "FP2") %>%
+                           ungroup() %>%
                               group_by(Driver, stin) %>%
                                 slice_min(lap5) %>%
                                   select(Driver, stin, lap5)
@@ -262,7 +285,7 @@ sa_22_3 = sa_22_2 %>% left_join(min_lap, by = c("Driver", "stin")) %>%
 
 cols = c("PER" = "#1E5BC6", "VER" = "#1E5BC6", "HAM" = "#6CD3BF", "RUS" = "#6CD3BF", "SAI" = "#ED1C24", "LEC" = "#ED1C24", "NOR" = "#F58020", "RIC" = "#F58020", 
          "ALO" = "#2293D1", "OCO" = "#2293D1", "GAS" = "#4E7C9B", "TSU" = "#4E7C9B", "STR" = "#2D826D", "HUL" = "#2D826D", "ALB" = "#37BEDD", "LAT" = "#37BEDD", 
-         "BOT" = "#B12039", "ZHO" = "#B12039", "MAG" = "#B6BABD", "MSC" = 	"#B6BABD")
+         "BOT" = "#B12039", "ZHO" = "#B12039", "MAG" = "#B6BABD", "MSC" = 	"#B6BABD", "VET" = "#2D826D")
 
 
 ggplot(sa_22_3, aes(x = Compound, y = av_lap, label = Driver, col = Driver)) + geom_text() +
@@ -292,7 +315,20 @@ ggplot(sa_22_3, aes(x = Compound, y = av_lap, label = Driver, col = Driver)) + g
 
 
 
-sa_22_4 = sa_22_2 %>% left_join(min_lap, by = c("Driver", "stin")) %>%
+min_lap2 = sa_22_2 %>% 
+                           ungroup() %>%
+                              group_by(Driver, stin, session) %>%
+                                slice_min(lap5) %>%
+                                  select(Driver, stin, lap5)
+
+
+
+
+colnames(min_lap2)[4]<- "min_lap"
+
+
+
+sa_22_4 = sa_22_2 %>% left_join(min_lap2, by = c("Driver", "stin", "session")) %>%
                               mutate(delta = lap5 - min_lap) %>%
                                 filter(delta < 5) %>%
                                 mutate(perdiff =  delta/min_lap)
@@ -366,7 +402,8 @@ all_data2 = all_data %>%
                             filter(val == 1)
 
 
-all_data_mx = all_data2 %>% group_by(stintl, tyre) %>%
+all_data_mx = all_data2 %>% filter(dri != "PER") %>%
+                            group_by(stintl, tyre) %>%
                               slice_max(pred) %>%
                                 select(stintl, tyre, pred)
 
@@ -408,6 +445,161 @@ ggplot(all_data_f, aes(x = stintl, ymin = min, ymax = max, fill = tyre)) +
 
 
 ```
+
+
+```{r}
+
+
+
+
+min_lap2 = sa_22_2 %>% 
+                           ungroup() %>%
+                              group_by(Driver, stin, session) %>%
+                                slice_min(lap5) %>%
+                                  select(Driver, stin, lap5)
+
+
+
+
+colnames(min_lap2)[4]<- "min_lap"
+
+
+
+sa_22_4 = sa_22_2 %>% left_join(min_lap2, by = c("Driver", "stin", "session")) %>%
+                              mutate(delta = lap5 - min_lap) %>%
+                                filter(delta < 5) %>%
+                                mutate(perdiff =  delta/min_lap)
+
+
+tot_loss = sa_22_4 %>% group_by(Driver, stin) %>%
+                          summarise(totpd = sum(delta))
+
+
+
+
+hard_mod = sa_22_4 %>% filter(Compound == "HARD") %>%
+                        mutate(stintl2 = stintl^2) 
+
+
+
+
+
+med_mod = sa_22_4 %>% filter(Compound == "MEDIUM") %>%
+                        mutate(stintl2 = stintl^2)
+
+
+
+soft_mod = sa_22_4 %>% filter(Compound == "SOFT") %>%
+                        mutate(stintl2 = stintl^2)
+
+
+soft_dri = soft_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+soft_list = list(soft_dri$Driver)
+
+soft_list2 = soft_list[[1]]
+
+med_dri = med_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+med_list = list(med_dri$Driver)
+
+med_list2 = med_list[[1]]
+
+
+har_dri = hard_mod %>% group_by(Driver) %>%
+                            slice_min(perdiff)
+
+har_list = list(har_dri$Driver)
+
+har_list2 = har_list[[1]]
+
+
+soft_stin = map_dfr(soft_list2, stint_func_s)
+
+med_stin = map_dfr(med_list2, stint_func_m)
+
+
+hard_stin = map_dfr(har_list2, stint_func_h)
+
+
+
+
+ggplot(soft_stin, aes(x = stintl, y = pred, col = dri)) + geom_point()
+
+
+
+
+ggplot(med_stin, aes(x = stintl, y = pred, col = dri)) + geom_point()
+
+
+
+
+ggplot(hard_stin, aes(x = stintl, y = pred, col = dri)) + geom_point()
+
+
+
+
+```
+
+
+
+
+```{r}
+
+all_data = soft_stin %>% 
+                    bind_rows(med_stin) %>%
+                    bind_rows(hard_stin) 
+                       
+
+
+
+
+
+
+test = all_data  %>% group_by(dri, tyre) %>%
+                        summarise(totpred = sum(pred)) %>%
+                          mutate(val = if_else(totpred < 0 , 0, 1))
+
+all_data2 = all_data %>%
+                        left_join(test, by = c("dri", "tyre")) %>%
+                            filter(val == 1)
+
+
+
+ggplot(all_data2, aes(x = stintl, y = pred, col = dri)) + geom_point() + facet_wrap(~tyre)
+
+```
+
+
+
+
+
+```{r}
+
+
+
+all_data_fin = all_data2 %>% filter(dri != "Per") %>%
+                                group_by(stintl, tyre) %>%
+                                summarise(meanpred = mean(pred))
+
+
+
+ggplot(all_data_fin, aes(x = stintl, y = meanpred, col = tyre)) + geom_line()
+
+
+
+
+
+
+
+
+```
+
+
+
+
 
 
 
